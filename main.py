@@ -1,5 +1,6 @@
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import matplotlib
 matplotlib.use("Agg")
@@ -63,3 +64,22 @@ def generate_graph(request: GraphRequest):
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+@app.get("/graphs/{filename}")
+def get_graph(filename: str):
+    # Only allow PNG filenames
+    if Path(filename).name != filename or not filename.endswith(".png"):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    file_path = Path("graphs") / filename
+
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Graph not found")
+
+    return FileResponse(
+        path=file_path,
+        media_type="image/png",
+        filename=filename,
+        content_disposition_type="inline"
+    )
